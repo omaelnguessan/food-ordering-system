@@ -12,6 +12,7 @@ import com.food.ordering.system.order.service.domain.port.output.repository.Cust
 import com.food.ordering.system.order.service.domain.port.output.repository.OrderRepository;
 import com.food.ordering.system.order.service.domain.port.output.repository.RestaurantRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,16 +33,19 @@ public class OrderCreateCommandHandler {
 
     private final OrderDataMapper orderDataMapper;
 
+    private final ApplicationEventPublisher applicationEventPublisher;
+
     public OrderCreateCommandHandler(OrderDomainService orderDomainService,
                                      OrderRepository orderRepository,
                                      RestaurantRepository restaurantRepository,
                                      CustomerRepository customerRepository,
-                                     OrderDataMapper orderDataMapper) {
+                                     OrderDataMapper orderDataMapper, ApplicationEventPublisher applicationEventPublisher) {
         this.orderDomainService = orderDomainService;
         this.orderRepository = orderRepository;
         this.restaurantRepository = restaurantRepository;
         this.customerRepository = customerRepository;
         this.orderDataMapper = orderDataMapper;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Transactional
@@ -52,6 +56,7 @@ public class OrderCreateCommandHandler {
         OrderCreatedEvent orderCreatedEvent = orderDomainService.validateAndInitializeOrder(order, restaurant);
         Order orderSaved = saveOrder(order);
         log.info("Order is created with id: {}", orderSaved.getId().getValue());
+        applicationEventPublisher.publishEvent(orderCreatedEvent);
         return orderDataMapper.orderToCreateOrderResponse(orderSaved);
     }
 
